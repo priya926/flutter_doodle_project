@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -8,6 +10,8 @@ import 'package:flutter_drawing_board/flutter_drawing_board.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/image_content.dart';
+
 class DoodlingScreen extends StatefulWidget {
   const DoodlingScreen({super.key});
 
@@ -17,6 +21,7 @@ class DoodlingScreen extends StatefulWidget {
 
 class _DoodlingScreenState extends State<DoodlingScreen> {
   double _colorOpacity = 0.1;
+  late DrawingController _controller;
 
   File? _image;
 
@@ -27,9 +32,11 @@ class _DoodlingScreenState extends State<DoodlingScreen> {
     final XFile? pickedImage =
         await _picker.pickImage(source: ImageSource.gallery);
     if (pickedImage != null) {
-      setState(() {
-        _image = File(pickedImage.path);
-      });
+      _image = File(pickedImage.path);
+      // _getImage(_image!);
+      _controller.setPaintContent(ImageContent(
+        await _getImage(_image!),
+      ));
     }
   }
 
@@ -39,7 +46,6 @@ class _DoodlingScreenState extends State<DoodlingScreen> {
     _controller = DrawingController();
   }
 
-  late DrawingController _controller;
   @override
   void dispose() {
     // TODO: implement dispose
@@ -116,10 +122,8 @@ class _DoodlingScreenState extends State<DoodlingScreen> {
                       Icon(Icons.add_a_photo),
                       SizedBox(width: 5),
                       Text('Import Image'),
-                  ],
+                    ],
                   ),
-             
-                  
                 ),
                 PopupMenuItem(
                   child: Row(
@@ -142,17 +146,17 @@ class _DoodlingScreenState extends State<DoodlingScreen> {
         ),
         showDefaultActions: true,
         showDefaultTools: true,
-         const SizedBox(height: 35),
-              // The picked image will be displayed here
-              Container(
-                alignment: Alignment.center,
-                width: double.infinity,
-                height: 300,
-                color: Colors.grey[300],
-                child: _image != null
-                    ? Image.file(_image!, fit: BoxFit.cover)
-                    : const Text('Please select an image'),
-              )
+        //  const SizedBox(height: 35),
+        //       // The picked image will be displayed here
+        //       Container(
+        //         alignment: Alignment.center,
+        //         width: double.infinity,
+        //         height: 300,
+        //         color: Colors.grey[300],
+        //         child: _image != null
+        //             ? Image.file(_image!, fit: BoxFit.cover)
+        //             : const Text('Please select an image'),
+        //       )
       ),
     );
   }
@@ -161,7 +165,7 @@ class _DoodlingScreenState extends State<DoodlingScreen> {
     try {
       final imageData = await _controller.getImageData();
       if (imageData == null) {
-        print("No Image to Save");
+        log("No Image to Save");
         return;
       }
 
@@ -174,9 +178,23 @@ class _DoodlingScreenState extends State<DoodlingScreen> {
 
       final file = File(path);
       await file.writeAsBytes(imageData.buffer.asInt8List());
-      print("Drawing saved at $path");
+      log("Drawing saved at $path");
     } catch (error) {
-      print("Error saving drawing $error");
+      log("Error saving drawing $error");
     }
+  }
+
+  Future<ui.Image> _getImage(File imageFile) async {
+    final Completer<ImageInfo> completer = Completer<ImageInfo>();
+    final FileImage img = FileImage(imageFile);
+    img.resolve(ImageConfiguration.empty).addListener(
+      ImageStreamListener((ImageInfo info, _) {
+        completer.complete(info);
+      }),
+    );
+
+    final ImageInfo imageInfo = await completer.future;
+
+    return imageInfo.image;
   }
 }
