@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Doodle app needs permision to click image</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Doodle app needs permision to record audio</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Doodle app needs permision to click image</string>
 </dict>
 </plist>
